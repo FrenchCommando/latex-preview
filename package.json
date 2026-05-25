@@ -9,6 +9,7 @@
     "vscode": "^1.120.0"
   },
   "categories": ["Other"],
+  "icon": "media/icon.png",
   "activationEvents": [
     "onLanguage:latex",
     "workspaceContains:**/*.tex"
