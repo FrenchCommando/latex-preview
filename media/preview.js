@@ -168,7 +168,7 @@ window.addEventListener("message", (event) => {
 // rest of the panel still works for showing the compile log.
 try {
   trace("import pdf.js start");
-  pdfjs = await import(window.__PDFJS_URI__);
+  const pdfjsModule = await import(window.__PDFJS_URI__);
   trace("import pdf.js done");
   // VS Code webviews refuse to spawn an ES-module Worker from their own
   // vscode-webview:// URI scheme, so pdf.js falls back to a "fake worker"
@@ -179,8 +179,13 @@ try {
   trace("fetch worker source");
   const workerSrc = await (await fetch(window.__WORKER_URI__)).text();
   const workerBlob = new Blob([workerSrc], { type: "text/javascript" });
-  pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
+  pdfjsModule.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
   trace("worker blob URL set");
+  // Expose pdfjs only after workerSrc is configured. Otherwise a "load"
+  // message arriving in the gap between import resolution and worker setup
+  // would slip past the `if (pdfjs)` gate and renderPdf would throw with
+  // "No GlobalWorkerOptions.workerSrc specified".
+  pdfjs = pdfjsModule;
   // Flush any PDF that arrived while pdf.js was still loading (stale-PDF
   // prewarm on cold open).
   if (pendingPdfData) {
