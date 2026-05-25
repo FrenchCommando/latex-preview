@@ -46,8 +46,13 @@ code --install-extension latex-preview-0.0.1.vsix
 
 Commands:
 
-- **LaTeX Preview: Show** — open or focus the preview panel.
+- **LaTeX Preview: Show** — open or focus the preview panel; compile the
+  active/main `.tex`.
 - **LaTeX Preview: Compile Now** — force a compile (bypasses visibility gate).
+- **LaTeX Preview: Open PDF** — load a plain `.pdf` into the panel (no
+  compile). Available from the command palette, the explorer right-click on a
+  `.pdf` file, and the editor tab right-click. Auto-compile on `.tex` edits is
+  paused while a plain PDF is loaded; running **Show** restores compile mode.
 
 Auto-compile only runs when the preview panel is visible. Hidden tabs pause and
 catch up on re-focus.

@@ -2,7 +2,7 @@
   "name": "latex-preview",
   "displayName": "LaTeX Preview",
   "description": "Minimal LaTeX PDF preview via latexmk + pdf.js",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "private": true,
   "publisher": "martialren",
   "engines": {
@@ -23,8 +23,28 @@
       {
         "command": "latexPreview.compile",
         "title": "LaTeX Preview: Compile Now"
+      },
+      {
+        "command": "latexPreview.openPdf",
+        "title": "LaTeX Preview: Open PDF"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "latexPreview.openPdf",
+          "when": "resourceExtname == .pdf",
+          "group": "navigation"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "latexPreview.openPdf",
+          "when": "resourceExtname == .pdf",
+          "group": "navigation"
+        }
+      ]
+    },
     "jsonValidation": [
       {
         "fileMatch": "latex-preview.json",

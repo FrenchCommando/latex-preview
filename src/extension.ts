@@ -6,6 +6,7 @@ import { PreviewPanel } from "./preview";
 import { ProjectConfig, DEFAULT_CONFIG, CONFIG_FILENAME, loadConfig } from "./config";
 
 let preview: PreviewPanel | null = null;
+let previewMode: "compile" | "static" = "compile";
 let debounceTimer: NodeJS.Timeout | null = null;
 let compiling = false;
 let pendingPath: string | null = null;
@@ -24,10 +25,14 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("latexPreview.compile", () =>
       triggerCompile(context, /*force*/ true),
     ),
+    vscode.commands.registerCommand("latexPreview.openPdf", (uri?: vscode.Uri) =>
+      openPdfFile(context, uri),
+    ),
   );
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((event) => {
+      if (previewMode !== "compile") return;
       if (!event.document.uri.fsPath.endsWith(".tex")) return;
       if (!preview) return;
       if (!preview.isVisible()) {
@@ -68,23 +73,65 @@ function watchProjectConfig(context: vscode.ExtensionContext) {
 }
 
 async function showPreview(context: vscode.ExtensionContext) {
-  if (!preview) {
-    const created = new PreviewPanel(context.extensionUri, () => {
-      preview = null;
-      pendingWhileHidden = false;
-    });
-    preview = created;
-    context.subscriptions.push(
-      created.onDidChangeVisibility((visible) => {
-        if (visible && pendingWhileHidden) {
-          pendingWhileHidden = false;
-          scheduleCompile(context);
-        }
-      }),
-    );
-  }
-  preview.reveal();
+  ensurePanel(context);
+  previewMode = "compile";
+  preview!.reveal();
   await triggerCompile(context, /*force*/ true);
+}
+
+async function openPdfFile(context: vscode.ExtensionContext, uri?: vscode.Uri) {
+  let pdfPath: string | null = uri?.fsPath ?? null;
+  if (!pdfPath) {
+    const editor = vscode.window.activeTextEditor;
+    const activePath = editor?.document.uri.fsPath;
+    if (activePath?.toLowerCase().endsWith(".pdf")) {
+      pdfPath = activePath;
+    }
+  }
+  if (!pdfPath) {
+    const picked = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      filters: { PDF: ["pdf"] },
+      openLabel: "Open in LaTeX Preview",
+    });
+    pdfPath = picked?.[0]?.fsPath ?? null;
+  }
+  if (!pdfPath) {
+    vscode.window.showWarningMessage("LaTeX Preview: no PDF selected.");
+    return;
+  }
+
+  ensurePanel(context);
+  previewMode = "static";
+  preview!.reveal();
+  preview!.setStatus(`Loading ${path.basename(pdfPath)}…`);
+  try {
+    const buf = await fs.readFile(pdfPath);
+    preview!.load(new Uint8Array(buf));
+    output.appendLine(`Loaded PDF: ${pdfPath}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    output.appendLine(`Failed to load PDF ${pdfPath}: ${message}`);
+    preview!.showError(`Failed to load PDF:\n${message}`);
+  }
+}
+
+function ensurePanel(context: vscode.ExtensionContext) {
+  if (preview) return;
+  const created = new PreviewPanel(context.extensionUri, () => {
+    preview = null;
+    pendingWhileHidden = false;
+    previewMode = "compile";
+  });
+  preview = created;
+  context.subscriptions.push(
+    created.onDidChangeVisibility((visible) => {
+      if (visible && pendingWhileHidden) {
+        pendingWhileHidden = false;
+        scheduleCompile(context);
+      }
+    }),
+  );
 }
 
 function scheduleCompile(context: vscode.ExtensionContext) {
