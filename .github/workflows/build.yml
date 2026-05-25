@@ -23,11 +23,6 @@ jobs:
       - run: npm run package
       - name: Normalize vsix filename
         run: mv latex-preview-*.vsix latex-preview.vsix
-      - uses: actions/upload-artifact@v7
-        with:
-          name: latex-preview-vsix
-          path: latex-preview.vsix
-          if-no-files-found: error
       - name: Update rolling 'latest' release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:

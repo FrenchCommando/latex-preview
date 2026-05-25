@@ -5,7 +5,8 @@ import * as fs from "node:fs/promises";
 export interface ProjectConfig {
   mainFile: string;
   debounceMs: number;
-  latexmkArgs: string[];
+  latexCommand: string;
+  latexArgs: string[];
   figureWatch: string[];
   figureCommand: string;
 }
@@ -13,7 +14,8 @@ export interface ProjectConfig {
 export const DEFAULT_CONFIG: ProjectConfig = {
   mainFile: "",
   debounceMs: 800,
-  latexmkArgs: ["-pdf", "-interaction=nonstopmode", "-halt-on-error", "-file-line-error"],
+  latexCommand: "texify",
+  latexArgs: ["--pdf", "--batch"],
   figureWatch: [],
   figureCommand: "",
 };

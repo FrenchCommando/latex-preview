@@ -15,11 +15,16 @@
       "default": 800,
       "description": "Idle delay (ms) after typing stops before recompiling."
     },
-    "latexmkArgs": {
+    "latexCommand": {
+      "type": "string",
+      "default": "texify",
+      "description": "LaTeX driver binary on PATH. Default 'texify' (MiKTeX, no Perl needed). Other options: 'latexmk' (needs Perl on Windows), 'tectonic', 'pdflatex' (no bibtex passes). Adjust latexArgs to match."
+    },
+    "latexArgs": {
       "type": "array",
       "items": { "type": "string" },
-      "default": ["-pdf", "-interaction=nonstopmode", "-halt-on-error", "-file-line-error"],
-      "description": "Arguments passed to latexmk before the .tex filename."
+      "default": ["--pdf", "--batch"],
+      "description": "Arguments passed to latexCommand before the .tex filename. Defaults are for texify; for latexmk use ['-pdf','-interaction=nonstopmode','-halt-on-error','-file-line-error']."
     },
     "figureWatch": {
       "type": "array",

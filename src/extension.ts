@@ -132,9 +132,9 @@ async function triggerCompile(context: vscode.ExtensionContext, force: boolean) 
       figuresStale = false;
     }
 
-    output.appendLine(`Compiling ${texPath}`);
+    output.appendLine(`Compiling ${texPath} with ${projectConfig.latexCommand}`);
     preview?.setStatus("Compiling…");
-    const result = await compile(texPath, projectConfig.latexmkArgs);
+    const result = await compile(texPath, projectConfig.latexCommand, projectConfig.latexArgs);
     if (result.success && result.pdfPath) {
       output.appendLine("Compile OK");
       const data = await fs.readFile(result.pdfPath);

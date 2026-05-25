@@ -27,14 +27,18 @@ export function runShell(command: string, cwd: string): Promise<ShellResult> {
   });
 }
 
-export function compile(texPath: string, extraArgs: string[]): Promise<CompileResult> {
+export function compile(
+  texPath: string,
+  command: string,
+  extraArgs: string[],
+): Promise<CompileResult> {
   return new Promise((resolve) => {
     const cwd = path.dirname(texPath);
     const fileName = path.basename(texPath);
     const baseName = path.basename(texPath, path.extname(texPath));
     const args = [...extraArgs, fileName];
 
-    const child = spawn("latexmk", args, {
+    const child = spawn(command, args, {
       cwd,
       shell: process.platform === "win32",
     });
@@ -46,7 +50,7 @@ export function compile(texPath: string, extraArgs: string[]): Promise<CompileRe
     child.on("error", (err) => {
       resolve({
         pdfPath: null,
-        log: `Failed to start latexmk: ${err.message}\nIs latexmk on PATH?`,
+        log: `Failed to start ${command}: ${err.message}\nIs ${command} on PATH?`,
         success: false,
       });
     });

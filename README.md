@@ -5,7 +5,8 @@ panel. Compiles via `latexmk`, renders via `pdf.js` in a webview.
 
 ## Requirements
 
-- `latexmk` on `PATH` (any TeX distribution: MiKTeX, TeX Live, etc.).
+- A LaTeX driver on `PATH`. Default is `texify` (ships with MiKTeX). Other
+  drivers work via the `latexCommand` setting — see Configuration.
 - VS Code `^1.115.0`.
 
 ## Install
@@ -61,7 +62,8 @@ when editing it.
 {
   "mainFile": "paper/main.tex",
   "debounceMs": 800,
-  "latexmkArgs": ["-pdf", "-interaction=nonstopmode", "-halt-on-error", "-file-line-error"],
+  "latexCommand": "texify",
+  "latexArgs": ["--pdf", "--batch"],
   "figureWatch": ["scripts/figures/**", "data/**"],
   "figureCommand": "npm run figures"
 }
@@ -71,9 +73,10 @@ when editing it.
 |---|---|---|
 | `mainFile` | `""` (active editor) | Path to the root `.tex`. Empty = use whichever `.tex` is active. |
 | `debounceMs` | `800` | Idle ms after typing stops before recompile. |
-| `latexmkArgs` | see schema | Args passed to `latexmk` before the filename. |
+| `latexCommand` | `"texify"` | LaTeX driver. `texify` (MiKTeX, Perl-free), `latexmk` (TeX Live or MiKTeX+Perl), `tectonic`, `pdflatex`… |
+| `latexArgs` | `["--pdf", "--batch"]` | Args passed to `latexCommand` before the filename. Texify defaults shown; for latexmk use `["-pdf","-interaction=nonstopmode","-halt-on-error","-file-line-error"]`. |
 | `figureWatch` | `[]` | Globs (workspace-relative) whose changes mark figures stale. |
-| `figureCommand` | `""` | Shell command run from workspace root before `latexmk` when figures are stale. Empty = disabled. |
+| `figureCommand` | `""` | Shell command run from workspace root before the LaTeX driver when figures are stale. Empty = disabled. |
 
 ### Figure regen is lazy
 
