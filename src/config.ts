@@ -13,7 +13,7 @@ export interface ProjectConfig {
 
 export const DEFAULT_CONFIG: ProjectConfig = {
   mainFile: "",
-  debounceMs: 800,
+  debounceMs: 200,
   latexCommand: "texify",
   latexArgs: ["--pdf", "--batch"],
   figureWatch: [],

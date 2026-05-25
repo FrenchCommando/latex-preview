@@ -42,7 +42,9 @@ code --install-extension latex-preview-0.0.1.vsix
 
 1. Open a workspace containing a `.tex` file.
 2. Run **LaTeX Preview: Show** from the command palette.
-3. Edit the `.tex` — the preview recompiles after typing stops (default 800 ms).
+3. Edit and **save** the `.tex` — the preview recompiles shortly after save
+   (default 200 ms debounce). If VS Code auto-save is on, this happens
+   automatically after each idle pause.
 
 Commands:
 
@@ -77,7 +79,7 @@ when editing it.
 | Key | Default | Purpose |
 |---|---|---|
 | `mainFile` | `""` (active editor) | Path to the root `.tex`. Empty = use whichever `.tex` is active. |
-| `debounceMs` | `800` | Idle ms after typing stops before recompile. |
+| `debounceMs` | `200` | Delay (ms) after `.tex` save before recompile. |
 | `latexCommand` | `"texify"` | LaTeX driver. `texify` (MiKTeX, Perl-free), `latexmk` (TeX Live or MiKTeX+Perl), `tectonic`, `pdflatex`… |
 | `latexArgs` | `["--pdf", "--batch"]` | Args passed to `latexCommand` before the filename. Texify defaults shown; for latexmk use `["-pdf","-interaction=nonstopmode","-halt-on-error","-file-line-error"]`. |
 | `figureWatch` | `[]` | Globs (workspace-relative) whose changes mark figures stale. |

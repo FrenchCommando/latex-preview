@@ -12,8 +12,8 @@
     "debounceMs": {
       "type": "number",
       "minimum": 0,
-      "default": 800,
-      "description": "Idle delay (ms) after typing stops before recompiling."
+      "default": 200,
+      "description": "Delay (ms) after a .tex save before recompiling. Small by default so saves are nearly instant; bumped up if you want to collapse Save-All or format-on-save bursts."
     },
     "latexCommand": {
       "type": "string",

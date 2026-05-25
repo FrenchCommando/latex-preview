@@ -31,9 +31,13 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.workspace.onDidChangeTextDocument((event) => {
+    // Compile on save, not on change: latexmk/texify reads from disk, so
+    // recompiling on every keystroke is wasted work against stale bytes.
+    // Users with VS Code auto-save still get near-live preview because
+    // auto-save fires a save event after each idle pause.
+    vscode.workspace.onDidSaveTextDocument((document) => {
       if (previewMode !== "compile") return;
-      if (!event.document.uri.fsPath.endsWith(".tex")) return;
+      if (!document.uri.fsPath.endsWith(".tex")) return;
       if (!preview) return;
       if (!preview.isVisible()) {
         pendingWhileHidden = true;
