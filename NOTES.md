@@ -159,27 +159,23 @@ mode. Reason: opening a plain PDF (build artifact, unrelated document)
 shouldn't be silently overwritten by the latest paper build the next time
 you save a `.tex`.
 
-Flip back to `compile` happens via four triggers:
+Mode flips back to `compile` as soon as the user signals "I'm back on the
+.tex side." The signals, all wired up so coverage is complete:
 
-- **Show** — explicit; also reveals + compiles.
-- **Saving a `.tex`** — the clearest "intent to compile" signal. Flips mode
-  and proceeds with the normal compile flow. Without this, the save would
-  be silently dropped in static mode, which is the worst kind of
-  surprise.
-- **Focusing a `.tex` editor** (`onDidChangeActiveTextEditor`) — catches
-  the "click back on the .tex tab" path. Flips mode AND reloads the
-  compiled `<mainFile>.pdf` so the swap is immediately visible.
-- **Cursor / selection change in a `.tex`** (`onDidChangeTextEditorSelection`)
-  — catches the path where the user never lost focus from the `.tex`
-  (e.g., explorer right-click → openPdf with the editor still active).
-  Gated by `STATIC_MODE_GRACE_MS` (1 s) so a cursor still in the `.tex`
-  at the moment of `openPdf` doesn't immediately revert the mode the
-  user just chose.
-- **Panel disposal** — closing the preview resets to compile for the
-  next session.
+- **`Show`** — explicit; also reveals + compiles.
+- **Save a `.tex`** — the save proceeds normally (instead of being
+  silently dropped).
+- **Active-editor changes to a `.tex`** — covers the "click back on the
+  tab" path.
+- **Cursor / selection moves inside a `.tex`** — covers the path where
+  the user opened the PDF without ever leaving the .tex (right-clicked
+  in the Explorer with the editor still active). Has a 1 s grace period
+  after `openPdf` so a cursor resting in the .tex at that moment doesn't
+  immediately revert.
+- **Panel disposal** — closing the preview resets for the next session.
 
-Combined, these cover every realistic way a user returns to the `.tex`
-without being aggressive enough to undo the user's `openPdf` intent.
+The active-editor and selection triggers also reload the compiled
+`<mainFile>.pdf` from disk so the flip is visibly real, not silent.
 
 ## Tab-context menu wiring
 
