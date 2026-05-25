@@ -80,7 +80,29 @@ async function showPreview(context: vscode.ExtensionContext) {
   ensurePanel(context);
   previewMode = "compile";
   preview!.reveal();
+  // Show whatever PDF is already on disk (probably from a previous compile or
+  // CI build) so the user sees content immediately. The fresh compile runs in
+  // the background and replaces it. Eliminates the ~10s MiKTeX cold-start
+  // wait when an up-to-date-ish PDF already exists.
+  await loadExistingPdfIfAny();
   await triggerCompile(context, /*force*/ true);
+}
+
+async function loadExistingPdfIfAny() {
+  const texPath = resolveTexPath();
+  if (!texPath || !preview) return;
+  const pdfPath = path.join(
+    path.dirname(texPath),
+    `${path.basename(texPath, path.extname(texPath))}.pdf`,
+  );
+  try {
+    const buf = await fs.readFile(pdfPath);
+    preview.load(new Uint8Array(buf));
+    preview.setStatus("Showing previous PDF — compiling fresh…");
+    output.appendLine(`Pre-loaded existing PDF while compile runs: ${pdfPath}`);
+  } catch {
+    // No previous PDF on disk; status flow proceeds normally.
+  }
 }
 
 async function openPdfFile(context: vscode.ExtensionContext, uri?: vscode.Uri) {
