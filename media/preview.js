@@ -170,7 +170,17 @@ try {
   trace("import pdf.js start");
   pdfjs = await import(window.__PDFJS_URI__);
   trace("import pdf.js done");
-  pdfjs.GlobalWorkerOptions.workerSrc = window.__WORKER_URI__;
+  // VS Code webviews refuse to spawn an ES-module Worker from their own
+  // vscode-webview:// URI scheme, so pdf.js falls back to a "fake worker"
+  // that runs parse + render on the main thread (30 s+ for a 13-page paper
+  // vs ~1 s with a real worker). Fetch the worker source ourselves and feed
+  // pdf.js a blob URL — CSP allows worker-src blob:, and the worker spawns
+  // for real.
+  trace("fetch worker source");
+  const workerSrc = await (await fetch(window.__WORKER_URI__)).text();
+  const workerBlob = new Blob([workerSrc], { type: "text/javascript" });
+  pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
+  trace("worker blob URL set");
   // Flush any PDF that arrived while pdf.js was still loading (stale-PDF
   // prewarm on cold open).
   if (pendingPdfData) {
