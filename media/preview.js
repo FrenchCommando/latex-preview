@@ -14,6 +14,7 @@ const SCALE = 1.5;
 let renderToken = 0;
 let pdfjs = null;
 let pdfjsLoadError = null;
+let pageObserver = null;
 
 function setStatus(text) {
   if (text) {
@@ -52,16 +53,24 @@ async function renderPdf(data) {
     return;
   }
   const token = ++renderToken;
-  setStatus("Rendering…");
+  setStatus("Loading…");
   setError("");
   const previousScroll = window.scrollY;
-  const loadingTask = pdfjs.getDocument({ data });
-  const pdf = await loadingTask.promise;
+  const pdf = await pdfjs.getDocument({ data }).promise;
   if (token !== renderToken) return;
 
-  // Render pages into a fragment, then swap into the container in one shot
-  // so the user doesn't see a flicker of an empty container mid-recompile.
+  // Tear down any previous observer so its callbacks don't fire against
+  // detached canvases from the old PDF.
+  if (pageObserver) {
+    pageObserver.disconnect();
+    pageObserver = null;
+  }
+
+  // Pass 1: build sized-but-blank canvases for every page and swap into the
+  // container in one shot. Layout is settled immediately, so scroll position
+  // is preserved exactly without waiting for any rendering.
   const fragment = document.createDocumentFragment();
+  const pageData = [];
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     if (token !== renderToken) return;
     const page = await pdf.getPage(pageNum);
@@ -69,16 +78,39 @@ async function renderPdf(data) {
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    const context = canvas.getContext("2d");
     fragment.appendChild(canvas);
-    await page.render({ canvasContext: context, viewport }).promise;
+    pageData.push({ page, viewport, canvas, rendered: false });
   }
-
   if (token !== renderToken) return;
   containerEl.replaceChildren(fragment);
-  setStatus("");
   window.scrollTo(0, previousScroll);
   vscode.setState({ scroll: previousScroll });
+  setStatus("");
+
+  // Pass 2: render each page when (or just before) it enters the viewport.
+  // rootMargin pre-renders a window's worth above and below current view so
+  // scrolling stays smooth.
+  pageObserver = new IntersectionObserver(
+    (entries) => {
+      if (token !== renderToken) return;
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const p = pageData.find((x) => x.canvas === entry.target);
+        if (!p || p.rendered) continue;
+        p.rendered = true;
+        pageObserver.unobserve(entry.target);
+        p.page
+          .render({ canvasContext: entry.target.getContext("2d"), viewport: p.viewport })
+          .promise.catch((err) => {
+            p.rendered = false;
+            // eslint-disable-next-line no-console
+            console.error(`page render failed: ${err.message ?? err}`);
+          });
+      }
+    },
+    { rootMargin: "400px 0px" },
+  );
+  for (const p of pageData) pageObserver.observe(p.canvas);
 }
 
 const restoredState = vscode.getState();
