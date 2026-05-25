@@ -45,6 +45,21 @@ export function activate(context: vscode.ExtensionContext) {
       }
       scheduleCompile(context);
     }),
+    // Auto-flip out of static mode when the user focuses a .tex editor.
+    // Their attention is back on the LaTeX source, so the next save should
+    // recompile. Also swap the displayed PDF back to the compiled paper
+    // (if one exists on disk) so the mode flip is actually visible —
+    // otherwise the static figure PDF lingers until the next save and the
+    // flip feels like a no-op.
+    vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+      if (previewMode !== "static") return;
+      if (!preview) return;
+      if (!editor) return;
+      if (!editor.document.uri.fsPath.endsWith(".tex")) return;
+      previewMode = "compile";
+      output.appendLine("Focused .tex editor — preview mode → compile");
+      await loadExistingPdfIfAny(Date.now());
+    }),
   );
 
   watchProjectConfig(context);
