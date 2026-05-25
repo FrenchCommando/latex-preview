@@ -7,6 +7,7 @@ import { ProjectConfig, DEFAULT_CONFIG, CONFIG_FILENAME, loadConfig } from "./co
 
 let preview: PreviewPanel | null = null;
 let previewMode: "compile" | "static" = "compile";
+let staticModeStartedAt = 0;
 let debounceTimer: NodeJS.Timeout | null = null;
 let compiling = false;
 let pendingPath: string | null = null;
@@ -15,6 +16,11 @@ let figuresStale = false;
 let figureWatchers: vscode.FileSystemWatcher[] = [];
 let projectConfig: ProjectConfig = { ...DEFAULT_CONFIG };
 let output: vscode.OutputChannel;
+
+// Brief grace period after entering static mode during which selection
+// changes in a .tex don't flip back — prevents a cursor still resting in
+// the .tex from immediately reverting the mode the user just chose.
+const STATIC_MODE_GRACE_MS = 1000;
 
 export function activate(context: vscode.ExtensionContext) {
   output = vscode.window.createOutputChannel("LaTeX Preview");
@@ -35,22 +41,24 @@ export function activate(context: vscode.ExtensionContext) {
     // recompiling on every keystroke is wasted work against stale bytes.
     // Users with VS Code auto-save still get near-live preview because
     // auto-save fires a save event after each idle pause.
+    // Saving a .tex while in static mode is also our most reliable
+    // intent-to-compile signal — flip out of static and proceed with the
+    // compile, rather than silently dropping the save.
     vscode.workspace.onDidSaveTextDocument((document) => {
-      if (previewMode !== "compile") return;
       if (!document.uri.fsPath.endsWith(".tex")) return;
       if (!preview) return;
+      if (previewMode === "static") {
+        previewMode = "compile";
+        output.appendLine("Saved .tex — preview mode → compile");
+      }
       if (!preview.isVisible()) {
         pendingWhileHidden = true;
         return;
       }
       scheduleCompile(context);
     }),
-    // Auto-flip out of static mode when the user focuses a .tex editor.
-    // Their attention is back on the LaTeX source, so the next save should
-    // recompile. Also swap the displayed PDF back to the compiled paper
-    // (if one exists on disk) so the mode flip is actually visible —
-    // otherwise the static figure PDF lingers until the next save and the
-    // flip feels like a no-op.
+    // Tab-switch / focus-change flip. Catches the common "click back on the
+    // .tex tab" path. Reloads the compiled PDF so the flip is visibly real.
     vscode.window.onDidChangeActiveTextEditor(async (editor) => {
       if (previewMode !== "static") return;
       if (!preview) return;
@@ -58,6 +66,21 @@ export function activate(context: vscode.ExtensionContext) {
       if (!editor.document.uri.fsPath.endsWith(".tex")) return;
       previewMode = "compile";
       output.appendLine("Focused .tex editor — preview mode → compile");
+      await loadExistingPdfIfAny(Date.now());
+    }),
+    // In-editor click / cursor move flip. Catches the case where the user
+    // never lost focus from the .tex (e.g., openPdf from the explorer
+    // right-click while editor was active) — the active-editor listener
+    // never fires there. Gated by a brief grace period so a cursor still
+    // resting in the .tex when openPdf was triggered doesn't immediately
+    // revert the mode the user just chose.
+    vscode.window.onDidChangeTextEditorSelection(async (event) => {
+      if (previewMode !== "static") return;
+      if (Date.now() - staticModeStartedAt < STATIC_MODE_GRACE_MS) return;
+      if (!preview) return;
+      if (!event.textEditor.document.uri.fsPath.endsWith(".tex")) return;
+      previewMode = "compile";
+      output.appendLine("Selection in .tex — preview mode → compile");
       await loadExistingPdfIfAny(Date.now());
     }),
   );
@@ -158,6 +181,7 @@ async function openPdfFile(context: vscode.ExtensionContext, uri?: vscode.Uri) {
 
   ensurePanel(context);
   previewMode = "static";
+  staticModeStartedAt = Date.now();
   preview!.reveal();
   preview!.setStatus(`Loading ${path.basename(pdfPath)}…`);
   try {
