@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LaTeX Preview project config",
+  "description": "Project-scoped config for the latex-preview VS Code extension. Place at workspace root as latex-preview.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "mainFile": {
+      "type": "string",
+      "description": "Path to the main .tex file (relative to workspace root). Empty/absent = use active editor."
+    },
+    "debounceMs": {
+      "type": "number",
+      "minimum": 0,
+      "default": 800,
+      "description": "Idle delay (ms) after typing stops before recompiling."
+    },
+    "latexmkArgs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["-pdf", "-interaction=nonstopmode", "-halt-on-error", "-file-line-error"],
+      "description": "Arguments passed to latexmk before the .tex filename."
+    },
+    "figureWatch": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Glob patterns (workspace-relative) whose changes mark figures stale. Stale figures are regenerated before the next latex compile by running figureCommand."
+    },
+    "figureCommand": {
+      "type": "string",
+      "default": "",
+      "description": "Shell command (run from workspace root) to regenerate figures. Executed before latexmk when figures are marked stale. Empty = disabled."
+    }
+  }
+}

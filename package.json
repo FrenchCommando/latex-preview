@@ -1,0 +1,49 @@
+{
+  "name": "latex-preview",
+  "displayName": "LaTeX Preview",
+  "description": "Minimal LaTeX PDF preview via latexmk + pdf.js",
+  "version": "0.0.1",
+  "private": true,
+  "publisher": "martialren",
+  "engines": {
+    "vscode": "^1.120.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onLanguage:latex",
+    "workspaceContains:**/*.tex"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "latexPreview.show",
+        "title": "LaTeX Preview: Show"
+      },
+      {
+        "command": "latexPreview.compile",
+        "title": "LaTeX Preview: Compile Now"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "latex-preview.json",
+        "url": "./schemas/latex-preview.schema.json"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -p . --watch",
+    "package": "vsce package --allow-missing-repository --no-yarn"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.0",
+    "@types/vscode": "^1.120.0",
+    "@vscode/vsce": "*",
+    "typescript": "^6.0.0"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^5.7.0"
+  }
+}
