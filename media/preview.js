@@ -1,4 +1,10 @@
 const vscode = acquireVsCodeApi();
+const T0 = performance.now();
+const trace = (label) => {
+  // eslint-disable-next-line no-console
+  console.log(`[+${(performance.now() - T0).toFixed(0).padStart(5)} ms] ${label}`);
+};
+trace("preview.js start");
 
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
@@ -9,6 +15,7 @@ const containerEl = document.getElementById("container");
 // messages (status / error / pending PDF) — even if pdf.js fails to load,
 // we still want compile errors to reach the panel.
 vscode.postMessage({ type: "ready" });
+trace("ready posted");
 
 const SCALE = 1.5;
 let renderToken = 0;
@@ -58,10 +65,12 @@ async function renderPdf(data) {
     return;
   }
   const token = ++renderToken;
+  trace(`renderPdf start (${data.byteLength ?? data.length} bytes)`);
   setStatus("Loading…");
   setError("");
   const previousScroll = window.scrollY;
   const pdf = await pdfjs.getDocument({ data }).promise;
+  trace(`pdf parsed (${pdf.numPages} pages)`);
   if (token !== renderToken) return;
 
   // Tear down any previous observer so its callbacks don't fire against
@@ -91,6 +100,7 @@ async function renderPdf(data) {
   window.scrollTo(0, previousScroll);
   vscode.setState({ scroll: previousScroll });
   setStatus("");
+  trace("placeholders swapped in; pages render lazily as scrolled into view");
 
   // Pass 2: render each page when (or just before) it enters the viewport.
   // rootMargin pre-renders a window's worth above and below current view so
@@ -157,11 +167,14 @@ window.addEventListener("message", (event) => {
 // Load pdf.js asynchronously. If it fails (CSP, missing file, etc.) the
 // rest of the panel still works for showing the compile log.
 try {
+  trace("import pdf.js start");
   pdfjs = await import(window.__PDFJS_URI__);
+  trace("import pdf.js done");
   pdfjs.GlobalWorkerOptions.workerSrc = window.__WORKER_URI__;
   // Flush any PDF that arrived while pdf.js was still loading (stale-PDF
   // prewarm on cold open).
   if (pendingPdfData) {
+    trace("flushing pending PDF");
     const data = pendingPdfData;
     pendingPdfData = null;
     renderPdf(data).catch((err) => {

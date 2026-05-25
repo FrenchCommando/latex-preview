@@ -77,31 +77,45 @@ function watchProjectConfig(context: vscode.ExtensionContext) {
 }
 
 async function showPreview(context: vscode.ExtensionContext) {
+  const t0 = Date.now();
+  logTime("Show invoked", t0, t0);
   ensurePanel(context);
+  logTime("panel ensured", t0, Date.now());
   previewMode = "compile";
   preview!.reveal();
-  // Show whatever PDF is already on disk (probably from a previous compile or
-  // CI build) so the user sees content immediately. The fresh compile runs in
-  // the background and replaces it. Eliminates the ~10s MiKTeX cold-start
-  // wait when an up-to-date-ish PDF already exists.
-  await loadExistingPdfIfAny();
+  logTime("panel revealed", t0, Date.now());
+  await loadExistingPdfIfAny(t0);
+  logTime("stale PDF dispatched", t0, Date.now());
   await triggerCompile(context, /*force*/ true);
+  logTime("fresh compile finished", t0, Date.now());
 }
 
-async function loadExistingPdfIfAny() {
+function logTime(label: string, t0: number, now: number) {
+  output.appendLine(`[+${(now - t0).toString().padStart(5)} ms] ${label}`);
+}
+
+async function loadExistingPdfIfAny(t0: number) {
   const texPath = resolveTexPath();
-  if (!texPath || !preview) return;
+  if (!texPath || !preview) {
+    output.appendLine(
+      `[+${(Date.now() - t0).toString().padStart(5)} ms] no tex/preview, skip stale prewarm`,
+    );
+    return;
+  }
   const pdfPath = path.join(
     path.dirname(texPath),
     `${path.basename(texPath, path.extname(texPath))}.pdf`,
   );
   try {
     const buf = await fs.readFile(pdfPath);
+    logTime(`read stale PDF (${buf.length} bytes) from ${pdfPath}`, t0, Date.now());
     preview.load(new Uint8Array(buf));
     preview.setStatus("Showing previous PDF — compiling fresh…");
-    output.appendLine(`Pre-loaded existing PDF while compile runs: ${pdfPath}`);
-  } catch {
-    // No previous PDF on disk; status flow proceeds normally.
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    output.appendLine(
+      `[+${(Date.now() - t0).toString().padStart(5)} ms] no stale PDF at ${pdfPath}: ${message}`,
+    );
   }
 }
 
