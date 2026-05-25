@@ -2,13 +2,18 @@ const vscode = acquireVsCodeApi();
 
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
+const warningEl = document.getElementById("warning");
 const containerEl = document.getElementById("container");
 
-const pdfjs = await import(window.__PDFJS_URI__);
-pdfjs.GlobalWorkerOptions.workerSrc = window.__WORKER_URI__;
+// Signal readiness immediately so the extension can flush any queued
+// messages (status / error / pending PDF) — even if pdf.js fails to load,
+// we still want compile errors to reach the panel.
+vscode.postMessage({ type: "ready" });
 
 const SCALE = 1.5;
 let renderToken = 0;
+let pdfjs = null;
+let pdfjsLoadError = null;
 
 function setStatus(text) {
   if (text) {
@@ -28,7 +33,24 @@ function setError(text) {
   }
 }
 
+function setWarning(text) {
+  if (text) {
+    warningEl.textContent = text;
+    warningEl.classList.remove("hidden");
+  } else {
+    warningEl.classList.add("hidden");
+  }
+}
+
 async function renderPdf(data) {
+  if (!pdfjs) {
+    setError(
+      pdfjsLoadError
+        ? `pdf.js failed to load: ${pdfjsLoadError}`
+        : "pdf.js still loading, please retry the compile.",
+    );
+    return;
+  }
   const token = ++renderToken;
   setStatus("Rendering…");
   setError("");
@@ -78,10 +100,25 @@ window.addEventListener("message", (event) => {
     });
   } else if (msg.type === "error") {
     setStatus("");
+    setWarning("");
     setError(msg.log);
+  } else if (msg.type === "warning") {
+    setError("");
+    setWarning(msg.log);
   } else if (msg.type === "status") {
     setStatus(msg.text);
   }
 });
 
-vscode.postMessage({ type: "ready" });
+// Load pdf.js asynchronously. If it fails (CSP, missing file, etc.) the
+// rest of the panel still works for showing the compile log.
+try {
+  pdfjs = await import(window.__PDFJS_URI__);
+  pdfjs.GlobalWorkerOptions.workerSrc = window.__WORKER_URI__;
+} catch (err) {
+  pdfjsLoadError = err && err.message ? err.message : String(err);
+  // Only surface this if nothing more important is already shown.
+  if (errorEl.classList.contains("hidden")) {
+    setError(`pdf.js failed to load: ${pdfjsLoadError}`);
+  }
+}

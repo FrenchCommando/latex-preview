@@ -58,7 +58,7 @@ export function compile(
     child.on("exit", (code) => {
       const pdfPath = path.join(cwd, `${baseName}.pdf`);
       resolve({
-        pdfPath: code === 0 ? pdfPath : null,
+        pdfPath,
         log: buffer,
         success: code === 0,
       });

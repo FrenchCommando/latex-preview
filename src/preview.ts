@@ -7,6 +7,8 @@ export class PreviewPanel {
   private ready = false;
   private pendingPdf: Uint8Array | null = null;
   private pendingError: string | null = null;
+  private pendingWarning: string | null = null;
+  private pendingStatus: string | null = null;
 
   constructor(extensionUri: vscode.Uri, onDispose: () => void) {
     this.extensionUri = extensionUri;
@@ -45,7 +47,11 @@ export class PreviewPanel {
   }
 
   setStatus(text: string) {
-    this.post({ type: "status", text });
+    if (this.ready) {
+      this.panel.webview.postMessage({ type: "status", text });
+    } else {
+      this.pendingStatus = text;
+    }
   }
 
   load(data: Uint8Array) {
@@ -61,12 +67,15 @@ export class PreviewPanel {
       this.panel.webview.postMessage({ type: "error", log });
     } else {
       this.pendingError = log;
+      this.pendingWarning = null;
     }
   }
 
-  private post(msg: unknown) {
+  showWarning(log: string) {
     if (this.ready) {
-      this.panel.webview.postMessage(msg);
+      this.panel.webview.postMessage({ type: "warning", log });
+    } else {
+      this.pendingWarning = log;
     }
   }
 
@@ -80,6 +89,13 @@ export class PreviewPanel {
       if (this.pendingError) {
         this.panel.webview.postMessage({ type: "error", log: this.pendingError });
         this.pendingError = null;
+      } else if (this.pendingWarning) {
+        this.panel.webview.postMessage({ type: "warning", log: this.pendingWarning });
+        this.pendingWarning = null;
+      }
+      if (this.pendingStatus !== null) {
+        this.panel.webview.postMessage({ type: "status", text: this.pendingStatus });
+        this.pendingStatus = null;
       }
     }
   }

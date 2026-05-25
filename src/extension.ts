@@ -135,10 +135,25 @@ async function triggerCompile(context: vscode.ExtensionContext, force: boolean) 
     output.appendLine(`Compiling ${texPath} with ${projectConfig.latexCommand}`);
     preview?.setStatus("Compiling…");
     const result = await compile(texPath, projectConfig.latexCommand, projectConfig.latexArgs);
-    if (result.success && result.pdfPath) {
+
+    let pdfData: Uint8Array | null = null;
+    if (result.pdfPath) {
+      try {
+        const buf = await fs.readFile(result.pdfPath);
+        pdfData = new Uint8Array(buf);
+      } catch {
+        // PDF wasn't produced; fall through to error path.
+      }
+    }
+
+    if (result.success && pdfData) {
       output.appendLine("Compile OK");
-      const data = await fs.readFile(result.pdfPath);
-      preview?.load(new Uint8Array(data));
+      preview?.load(pdfData);
+    } else if (pdfData) {
+      output.appendLine("Compile finished with errors; rendering partial PDF");
+      output.appendLine(result.log);
+      preview?.load(pdfData);
+      preview?.showWarning(result.log || "Compile finished with errors.");
     } else {
       output.appendLine(result.log);
       preview?.showError(result.log || "Compile failed.");
