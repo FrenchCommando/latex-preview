@@ -14,11 +14,21 @@
       font-family: var(--vscode-font-family);
     }
     #status {
-      padding: 12px 16px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 6px 16px;
+      background: rgba(43, 43, 43, 0.95);
       color: #ccc;
       font-style: italic;
+      font-size: 12px;
+      border-top: 1px solid #555;
+      z-index: 10;
     }
     #status.hidden { display: none; }
+    /* Keep last page from being hidden behind the fixed status bar. */
+    #container { padding-bottom: 48px; }
     #error {
       padding: 12px 16px;
       color: #ff9b9b;
@@ -57,10 +67,10 @@
   </style>
 </head>
 <body>
-  <div id="status">Waiting for first compile…</div>
   <div id="error" class="hidden"></div>
   <div id="warning" class="hidden"></div>
   <div id="container"></div>
+  <div id="status">Waiting for first compile…</div>
   <script>
     window.__PDFJS_URI__ = "{{PDFJS_URI}}";
     window.__WORKER_URI__ = "{{WORKER_URI}}";

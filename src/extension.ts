@@ -253,6 +253,15 @@ function registerFigureWatchers(context: vscode.ExtensionContext) {
     const markStale = (uri: vscode.Uri) => {
       figuresStale = true;
       output.appendLine(`Figure source changed: ${uri.fsPath} → figures marked stale`);
+      // Trigger compile now if the preview is open and in compile mode.
+      // Visibility gate inside triggerCompile handles the hidden case via
+      // pendingWhileHidden, so switching back to the preview catches up.
+      if (!preview || previewMode !== "compile") return;
+      if (preview.isVisible()) {
+        scheduleCompile(context);
+      } else {
+        pendingWhileHidden = true;
+      }
     };
     watcher.onDidChange(markStale);
     watcher.onDidCreate(markStale);
