@@ -15,6 +15,9 @@ let renderToken = 0;
 let pdfjs = null;
 let pdfjsLoadError = null;
 let pageObserver = null;
+// Buffer the most recent "load" message that arrived before pdf.js was ready.
+// Without this, the stale-PDF prewarm on cold open is silently dropped.
+let pendingPdfData = null;
 
 function setStatus(text) {
   if (text) {
@@ -45,10 +48,12 @@ function setWarning(text) {
 
 async function renderPdf(data) {
   if (!pdfjs) {
+    // Should not happen — caller is expected to gate on pdfjs being ready.
+    // If we get here anyway, surface it so we don't fail silently.
     setError(
       pdfjsLoadError
         ? `pdf.js failed to load: ${pdfjsLoadError}`
-        : "pdf.js still loading, please retry the compile.",
+        : "pdf.js still loading.",
     );
     return;
   }
@@ -126,10 +131,17 @@ window.addEventListener("message", (event) => {
   const msg = event.data;
   if (!msg || typeof msg.type !== "string") return;
   if (msg.type === "load") {
-    renderPdf(msg.data).catch((err) => {
-      setStatus("");
-      setError(`Render error: ${err.message ?? err}`);
-    });
+    if (pdfjs) {
+      renderPdf(msg.data).catch((err) => {
+        setStatus("");
+        setError(`Render error: ${err.message ?? err}`);
+      });
+    } else if (pdfjsLoadError) {
+      setError(`Can't render — pdf.js failed to load: ${pdfjsLoadError}`);
+    } else {
+      // pdf.js still booting; render this PDF as soon as it's ready.
+      pendingPdfData = msg.data;
+    }
   } else if (msg.type === "error") {
     setStatus("");
     setWarning("");
@@ -147,6 +159,16 @@ window.addEventListener("message", (event) => {
 try {
   pdfjs = await import(window.__PDFJS_URI__);
   pdfjs.GlobalWorkerOptions.workerSrc = window.__WORKER_URI__;
+  // Flush any PDF that arrived while pdf.js was still loading (stale-PDF
+  // prewarm on cold open).
+  if (pendingPdfData) {
+    const data = pendingPdfData;
+    pendingPdfData = null;
+    renderPdf(data).catch((err) => {
+      setStatus("");
+      setError(`Render error: ${err.message ?? err}`);
+    });
+  }
 } catch (err) {
   pdfjsLoadError = err && err.message ? err.message : String(err);
   // Only surface this if nothing more important is already shown.

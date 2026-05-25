@@ -116,8 +116,12 @@ export class PreviewPanel {
       "build",
     );
 
-    const pdfjsUri = webview.asWebviewUri(vscode.Uri.joinPath(pdfjsDir, "pdf.mjs"));
-    const workerUri = webview.asWebviewUri(vscode.Uri.joinPath(pdfjsDir, "pdf.worker.mjs"));
+    // Use the minified builds — about half the bytes vs the dev builds, which
+    // matters for cold-start latency in the webview (~1.6 MB to parse vs 3.2).
+    const pdfjsUri = webview.asWebviewUri(vscode.Uri.joinPath(pdfjsDir, "pdf.min.mjs"));
+    const workerUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(pdfjsDir, "pdf.worker.min.mjs"),
+    );
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaDir, "preview.js"));
     const htmlPath = vscode.Uri.joinPath(mediaDir, "preview.html").fsPath;
 
