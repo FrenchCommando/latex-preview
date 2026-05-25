@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src __CSP_SOURCE__ 'unsafe-inline'; style-src __CSP_SOURCE__ 'unsafe-inline'; img-src __CSP_SOURCE__ blob: data:; worker-src __CSP_SOURCE__ blob:; font-src __CSP_SOURCE__;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src {{CSP_SOURCE}} 'unsafe-inline'; style-src {{CSP_SOURCE}} 'unsafe-inline'; img-src {{CSP_SOURCE}} blob: data:; worker-src {{CSP_SOURCE}} blob:; font-src {{CSP_SOURCE}};">
   <title>LaTeX Preview</title>
   <style>
     html, body { height: 100%; }
@@ -62,9 +62,9 @@
   <div id="warning" class="hidden"></div>
   <div id="container"></div>
   <script>
-    window.__PDFJS_URI__ = "__PDFJS_URI__";
-    window.__WORKER_URI__ = "__WORKER_URI__";
+    window.__PDFJS_URI__ = "{{PDFJS_URI}}";
+    window.__WORKER_URI__ = "{{WORKER_URI}}";
   </script>
-  <script type="module" src="__SCRIPT_URI__"></script>
+  <script type="module" src="{{SCRIPT_URI}}"></script>
 </body>
 </html>

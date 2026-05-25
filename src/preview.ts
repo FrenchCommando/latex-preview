@@ -117,9 +117,9 @@ export class PreviewPanel {
 
     const template = await fs.readFile(htmlPath, "utf8");
     return template
-      .replace(/__PDFJS_URI__/g, pdfjsUri.toString())
-      .replace(/__WORKER_URI__/g, workerUri.toString())
-      .replace(/__SCRIPT_URI__/g, scriptUri.toString())
-      .replace(/__CSP_SOURCE__/g, webview.cspSource);
+      .replace(/\{\{PDFJS_URI\}\}/g, pdfjsUri.toString())
+      .replace(/\{\{WORKER_URI\}\}/g, workerUri.toString())
+      .replace(/\{\{SCRIPT_URI\}\}/g, scriptUri.toString())
+      .replace(/\{\{CSP_SOURCE\}\}/g, webview.cspSource);
   }
 }
