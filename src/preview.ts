@@ -21,7 +21,7 @@ export class PreviewPanel {
         retainContextWhenHidden: true,
         localResourceRoots: [
           vscode.Uri.joinPath(extensionUri, "media"),
-          vscode.Uri.joinPath(extensionUri, "node_modules", "pdfjs-dist", "build"),
+          vscode.Uri.joinPath(extensionUri, "node_modules", "pdfjs-dist", "legacy", "build"),
         ],
       },
     );
@@ -103,10 +103,16 @@ export class PreviewPanel {
   private async loadHtml(): Promise<string> {
     const webview = this.panel.webview;
     const mediaDir = vscode.Uri.joinPath(this.extensionUri, "media");
+    // pdf.js's `legacy/` build, despite the name, is the right default — it
+    // transpiles away very recent JS features (Map.prototype.getOrInsertComputed,
+    // etc.) that pdf.js's modern build emits but V8 hasn't shipped under the
+    // final TC39 names yet. The modern `build/` fails to load even on current
+    // VS Code Chromium. Bundle penalty: ~85 KB.
     const pdfjsDir = vscode.Uri.joinPath(
       this.extensionUri,
       "node_modules",
       "pdfjs-dist",
+      "legacy",
       "build",
     );
 

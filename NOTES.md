@@ -35,7 +35,12 @@ is wired via `contributes.jsonValidation` so the file gets IntelliSense.
   these two in lockstep — `@types/vscode` provides API surface for the
   engine version, so they should always bump together.
 - `pdfjs-dist ^5.7.0` — uses ESM (`pdf.mjs` + `pdf.worker.mjs`). The webview
-  dynamic-imports them at runtime.
+  dynamic-imports them at runtime. **We use `pdfjs-dist/legacy/build/`, not
+  `build/`**, even though the latter sounds more modern. Reason: pdf.js's
+  modern build calls `Map.prototype.getOrInsertComputed` (TC39 reached Stage 4
+  Oct 2025), which V8 hasn't shipped under the final name yet — even on
+  Chromium 142. Legacy is transpiled around this. ~85 KB larger; not optional.
+  Revisit when V8 release notes explicitly list `getOrInsertComputed`.
 
 ## .vscodeignore is aggressive on purpose
 
