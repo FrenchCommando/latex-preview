@@ -2,11 +2,11 @@
   "name": "latex-preview",
   "displayName": "LaTeX Preview",
   "description": "Minimal LaTeX PDF preview via latexmk + pdf.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "publisher": "martialren",
   "engines": {
-    "vscode": "^1.120.0"
+    "vscode": "^1.115.0"
   },
   "categories": ["Other"],
   "activationEvents": [
@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.0",
-    "@types/vscode": "^1.120.0",
+    "@types/vscode": "^1.115.0",
     "@vscode/vsce": "*",
     "typescript": "^6.0.0"
   },

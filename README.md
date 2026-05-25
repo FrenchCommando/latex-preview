@@ -6,18 +6,24 @@ panel. Compiles via `latexmk`, renders via `pdf.js` in a webview.
 ## Requirements
 
 - `latexmk` on `PATH` (any TeX distribution: MiKTeX, TeX Live, etc.).
-- VS Code `^1.120.0`.
+- VS Code `^1.115.0`.
 
 ## Install
 
-### Pre-built vsix (CI)
+### Pre-built vsix (recommended)
 
-Every push to `main` builds a `.vsix` and uploads it as a GitHub Actions
-artifact named `latex-preview-vsix`. Download it from the workflow run on the
-repo's **Actions** tab, then:
+Every push to `main` updates a rolling **`latest`** GitHub Release with the
+freshly-built `.vsix`. Stable download URL:
+
+```
+https://github.com/FrenchCommando/latex-preview/releases/latest/download/latex-preview.vsix
+```
+
+Install:
 
 ```cmd
-code --install-extension latex-preview-0.0.1.vsix
+curl -L -o latex-preview.vsix https://github.com/FrenchCommando/latex-preview/releases/latest/download/latex-preview.vsix
+code --install-extension latex-preview.vsix
 ```
 
 Or in VS Code: **Extensions** panel → `...` menu → **Install from VSIX...**.
