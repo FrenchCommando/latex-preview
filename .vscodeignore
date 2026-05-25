@@ -1,4 +1,5 @@
 .vscode/**
+.github/**
 src/**
 tsconfig.json
 .gitignore
@@ -22,3 +23,4 @@ node_modules/pdfjs-dist/README.md
 node_modules/pdfjs-dist/CODE_OF_CONDUCT.md
 node_modules/pdfjs-dist/build/*.min.mjs
 node_modules/pdfjs-dist/build/*.sandbox*
+node_modules/pdfjs-dist/build/pdf.d.mts

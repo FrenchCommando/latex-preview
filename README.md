@@ -7,7 +7,7 @@ panel. Compiles via `latexmk`, renders via `pdf.js` in a webview.
 
 - A LaTeX driver on `PATH`. Default is `texify` (ships with MiKTeX). Other
   drivers work via the `latexCommand` setting — see Configuration.
-- VS Code `^1.115.0`.
+- VS Code `^1.120.0`.
 
 ## Install
 

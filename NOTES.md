@@ -31,9 +31,9 @@ is wired via `contributes.jsonValidation` so the file gets IntelliSense.
 - `tsconfig.json` has `"types": ["node", "vscode"]` — with `module: node16`,
   TS 6 doesn't auto-discover `@types/node`. Without this, every `node:*` import
   errors. Don't remove unless you also re-test the build.
-- `engines.vscode ^1.115.0` matches the `@types/vscode` we installed. Set to
-  the user's local VS Code minimum, not the current stable, since this is a
-  personal extension. Bump types and engines together if you raise the floor.
+- `engines.vscode ^1.120.0` matches the `@types/vscode` we installed. Keep
+  these two in lockstep — `@types/vscode` provides API surface for the
+  engine version, so they should always bump together.
 - `pdfjs-dist ^5.7.0` — uses ESM (`pdf.mjs` + `pdf.worker.mjs`). The webview
   dynamic-imports them at runtime.
 
