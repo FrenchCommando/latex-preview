@@ -2,7 +2,7 @@
   "name": "latex-preview",
   "displayName": "LaTeX Preview",
   "description": "Minimal LaTeX PDF preview via latexmk + pdf.js",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "publisher": "martialren",
   "engines": {

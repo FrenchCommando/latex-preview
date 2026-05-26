@@ -54,8 +54,11 @@ so the file gets IntelliSense.
 - `tsconfig.json` has `"types": ["node", "vscode"]` — with `module: node16`,
   TS 6 doesn't auto-discover `@types/node`. Without this, every `node:*`
   import errors. Don't remove unless you re-test the build.
-- `engines.vscode ^1.120.0` matches `@types/vscode`. Bump these together —
-  the types provide the API surface for the declared engine version.
+- `engines.vscode ^1.100.0` matches `@types/vscode`. Bump these together —
+  the types provide the API surface for the declared engine version. Floor
+  is intentionally well below current stable: the legacy pdf.js build
+  carries its own browser-baseline transpile, so we don't gain anything by
+  pinning to a newer Chromium. Lower floor = broader compatibility.
 - `pdfjs-dist ^5.7.0` — see "pdf.js" section below for the build & worker
   choices.
 
@@ -116,10 +119,14 @@ a local until the worker is wired up.
 The compile pipeline is gated to avoid wasted work and to react in the right
 order:
 
-- **Trigger is `onDidSaveTextDocument`**, not `onDidChangeTextDocument`. The
-  LaTeX driver reads from disk; recompiling on every keystroke would target
-  the stale on-disk bytes. Auto-save users still get near-live preview
-  because auto-save fires a save event after each idle pause.
+- **Trigger is a `FileSystemWatcher` on the resolved `.tex`** (or `**/*.tex`
+  when `mainFile` is unset), not `onDidChangeTextDocument`. The LaTeX driver
+  reads from disk; reacting to disk writes (not buffer edits) means we
+  recompile against bytes that actually exist. Auto-save users still get
+  near-live preview, and external writers (Claude editing files outside the
+  IDE, `git checkout`, scripts) trigger compiles too — `onDidSaveTextDocument`
+  would miss those. No-workspace `.tex` files lose auto-trigger (the watcher
+  needs a workspace root); they still have `latexPreview.compile`.
 - **Visibility gate.** Auto-compile only runs when the preview panel exists
   AND is visible. A hidden preview tab pauses; switching back triggers a
   catch-up via the `pendingWhileHidden` flag. Manual **Compile Now**
@@ -163,8 +170,8 @@ Mode flips back to `compile` as soon as the user signals "I'm back on the
 .tex side." The signals, all wired up so coverage is complete:
 
 - **`Show`** — explicit; also reveals + compiles.
-- **Save a `.tex`** — the save proceeds normally (instead of being
-  silently dropped).
+- **Edit a `.tex` on disk** (IDE save or external write) — the compile
+  proceeds normally (instead of being silently dropped).
 - **Active-editor changes to a `.tex`** — covers the "click back on the
   tab" path.
 - **Cursor / selection moves inside a `.tex`** — covers the path where

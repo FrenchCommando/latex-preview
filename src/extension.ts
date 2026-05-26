@@ -14,6 +14,7 @@ let pendingPath: string | null = null;
 let pendingWhileHidden = false;
 let figuresStale = false;
 let figureWatchers: vscode.FileSystemWatcher[] = [];
+let texWatcher: vscode.FileSystemWatcher | null = null;
 let projectConfig: ProjectConfig = { ...DEFAULT_CONFIG };
 let output: vscode.OutputChannel;
 
@@ -37,26 +38,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    // Compile on save, not on change: latexmk/texify reads from disk, so
-    // recompiling on every keystroke is wasted work against stale bytes.
-    // Users with VS Code auto-save still get near-live preview because
-    // auto-save fires a save event after each idle pause.
-    // Saving a .tex while in static mode is also our most reliable
-    // intent-to-compile signal — flip out of static and proceed with the
-    // compile, rather than silently dropping the save.
-    vscode.workspace.onDidSaveTextDocument((document) => {
-      if (!document.uri.fsPath.endsWith(".tex")) return;
-      if (!preview) return;
-      if (previewMode === "static") {
-        previewMode = "compile";
-        output.appendLine("Saved .tex — preview mode → compile");
-      }
-      if (!preview.isVisible()) {
-        pendingWhileHidden = true;
-        return;
-      }
-      scheduleCompile(context);
-    }),
     // Tab-switch / focus-change flip. Catches the common "click back on the
     // .tex tab" path. Reloads the compiled PDF so the flip is visibly real.
     vscode.window.onDidChangeActiveTextEditor(async (editor) => {
@@ -91,11 +72,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   disposeFigureWatchers();
+  disposeTexWatcher();
 }
 
 async function reloadProjectConfig(context: vscode.ExtensionContext) {
   projectConfig = await loadConfig(workspaceRoot(), output);
   registerFigureWatchers(context);
+  registerTexWatcher(context);
 }
 
 function watchProjectConfig(context: vscode.ExtensionContext) {
@@ -349,4 +332,36 @@ function registerFigureWatchers(context: vscode.ExtensionContext) {
 function disposeFigureWatchers() {
   for (const watcher of figureWatchers) watcher.dispose();
   figureWatchers = [];
+}
+
+function registerTexWatcher(context: vscode.ExtensionContext) {
+  disposeTexWatcher();
+  const root = workspaceRoot();
+  if (!root) return;
+  const mainFile = projectConfig.mainFile.trim();
+  const pattern = mainFile || "**/*.tex";
+  const watcher = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(root, pattern),
+  );
+  const onTexChange = (uri: vscode.Uri) => {
+    if (!preview) return;
+    if (previewMode === "static") {
+      previewMode = "compile";
+      output.appendLine(`${path.basename(uri.fsPath)} changed — preview mode → compile`);
+    }
+    if (!preview.isVisible()) {
+      pendingWhileHidden = true;
+      return;
+    }
+    scheduleCompile(context);
+  };
+  watcher.onDidChange(onTexChange);
+  watcher.onDidCreate(onTexChange);
+  texWatcher = watcher;
+  context.subscriptions.push(watcher);
+}
+
+function disposeTexWatcher() {
+  texWatcher?.dispose();
+  texWatcher = null;
 }
