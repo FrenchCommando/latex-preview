@@ -33,11 +33,10 @@ jobs:
           TITLE="v${VERSION} — ${TIMESTAMP}"
           NOTES="Auto-built from ${{ github.sha }} at ${TIMESTAMP}"
           if gh release view latest >/dev/null 2>&1; then
-            gh release upload latest latex-preview.vsix --clobber
-            gh release edit latest --title "${TITLE}" --notes "${NOTES}"
-          else
-            gh release create latest latex-preview.vsix \
-              --title "${TITLE}" \
-              --notes "${NOTES}" \
-              --latest
+            gh release delete latest --yes --cleanup-tag
           fi
+          gh release create latest latex-preview.vsix \
+            --target ${{ github.sha }} \
+            --title "${TITLE}" \
+            --notes "${NOTES}" \
+            --latest
