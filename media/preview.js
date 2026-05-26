@@ -160,6 +160,14 @@ window.addEventListener("message", (event) => {
     setError("");
     setWarning(msg.log);
   } else if (msg.type === "status") {
+    // A non-empty status means a new run is starting (compiling, loading,
+    // regenerating figures). Any error/warning on screen is from the previous
+    // run and would otherwise stay visible alongside "Compiling…", making a
+    // successful retry look like a repeat failure until renderPdf clears it.
+    if (msg.text) {
+      setError("");
+      setWarning("");
+    }
     setStatus(msg.text);
   }
 });
